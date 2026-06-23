@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Attendance System",
+    "slug": "attendance-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1976D2"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.attendance.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to verify check-in/check-out within office premises.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need background location to track attendance accurately.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1976D2"
+      },
+      "package": "com.attendance.mobile",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Attendance System to use your location for check-in verification."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7b3dcf14-bbc7-476a-90cb-86fbc3a9793a"
+      }
+    }
+  }
+}
