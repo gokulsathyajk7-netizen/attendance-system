@@ -23,13 +23,16 @@ export const paginatedResponse = (res, data, total, page, limit, message = 'Succ
     message,
     data,
     pagination: {
-      total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(total / limit),
-      hasNext: page * limit < total,
-      hasPrev: page > 1,
-    },
+  total,
+  page: Number(page),
+  limit: Number(limit),
+  totalPages:
+    Number(limit) > 0
+      ? Math.ceil(total / Number(limit))
+      : 0,
+  hasNext: Number(page) * Number(limit) < total,
+  hasPrev: Number(page) > 1,
+},
     timestamp: new Date().toISOString(),
   });
 };

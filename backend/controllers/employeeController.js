@@ -87,6 +87,19 @@ export const createEmployee = async (req, res) => {
       designation, salary, joining_date, role = 'employee',
       manager_id, address, emergency_contact
     } = req.body;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+if (!emailRegex.test(email)) {
+  return errorResponse(res, 'Invalid email', 400);
+}
+const [mobileRows] = await conn.execute(
+  "SELECT id FROM employees WHERE mobile = ?",
+  [mobile]
+);
+
+if (mobileRows.length) {
+  return errorResponse(res, "Mobile number already exists", 409);
+}
 
     // Generate temp password
     const tempPassword = `Temp@${Math.random().toString(36).slice(2, 8)}`;
@@ -100,15 +113,18 @@ export const createEmployee = async (req, res) => {
     const userId = userResult.insertId;
 
     // Generate employee code
-    const [codeRow] = await conn.execute(`SELECT COUNT(*) as cnt FROM employees`);
-    const empCode = `EMP${String(codeRow[0].cnt + 1).padStart(4, '0')}`;
+    const [codeRow] = await conn.execute(
+  `SELECT MAX(id) AS lastId FROM employees`
+);
+
+const empCode = `EMP${String((codeRow[0].lastId || 0) + 1).padStart(4, '0')}`;
 
     const profileImage = req.file ? `profiles/${req.file.filename}` : null;
 
     const [empResult] = await conn.execute(
       `INSERT INTO employees (user_id, employee_code, first_name, last_name, mobile, department_id, designation, salary, joining_date, profile_image, manager_id, address, emergency_contact)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, empCode, first_name, last_name, mobile, department_id, designation, salary || 0, joining_date, profileImage, manager_id || null, address || null, emergency_contact || null]
+      [userId, empCode, first_name, last_name, mobile, department_id, designation, Number(salary) || 0, joining_date, profileImage, manager_id || null, address || null, emergency_contact || null]
     );
 
     // Initialize leave balances for current year
@@ -157,9 +173,14 @@ export const updateEmployee = async (req, res) => {
     if (req.file) {
       // Delete old image
       if (profileImage) {
-        const oldPath = path.join(process.cwd(), 'uploads', profileImage);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
+  const oldPath = path.join(process.cwd(), 'uploads', profileImage);
+
+  if (fs.existsSync(oldPath)) {
+    await fs.promises.unlink(oldPath).catch((err) => {
+      logger.warn(`Failed to delete old profile image: ${err.message}`);
+    });
+  }
+}
       profileImage = `profiles/${req.file.filename}`;
     }
 
@@ -188,8 +209,24 @@ export const updateEmployee = async (req, res) => {
 export const deleteEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.execute(`SELECT user_id FROM employees WHERE id = ?`, [id]);
+    const [rows] = await pool.execute(`SELECT user_id, profile_image
+FROM employees
+WHERE id = ?`, [id]);
     if (!rows.length) return errorResponse(res, 'Employee not found', 404);
+    const employee = rows[0];
+    if (employee.profile_image) {
+  const imagePath = path.join(
+    process.cwd(),
+    'uploads',
+    employee.profile_image
+  );
+
+  if (fs.existsSync(imagePath)) {
+    await fs.promises.unlink(imagePath).catch((err) => {
+      logger.warn(`Image delete failed: ${err.message}`);
+    });
+  }
+}
 
     await pool.execute(`DELETE FROM users WHERE id = ?`, [rows[0].user_id]);
     return successResponse(res, {}, 'Employee deleted successfully');
@@ -245,7 +282,7 @@ export const selfRegisterRequest = async (req, res) => {
       [first_name, last_name || null, email.toLowerCase().trim(), mobile]
     );
 
-    await notifyAdmins('New Registration Request', `${first_name} ${last_name || ''} (${email}) requested an employee account.`, 'info');
+    // await notifyAdmins('New Registration Request', `${first_name} ${last_name || ''} (${email}) requested an employee account.`, 'info');
 
     return successResponse(res, {}, 'Request submitted. An admin will review and create your account.', 201);
   } catch (err) {

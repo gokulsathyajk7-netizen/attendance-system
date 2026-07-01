@@ -19,6 +19,29 @@ export const checkIn = async (req, res) => {
   try {
     await conn.beginTransaction();
     const { latitude, longitude, accuracy, device_info } = req.body;
+    if (
+  latitude === undefined ||
+  longitude === undefined
+) {
+  return errorResponse(
+    res,
+    'Latitude and Longitude are required',
+    400
+  );
+}
+if (
+  accuracy !== undefined &&
+  Number(accuracy) > 100
+) {
+  return errorResponse(
+    res,
+    'GPS accuracy is too low. Please move to an open area.',
+    400
+  );
+}
+const OFFICE_LAT = Number(process.env.OFFICE_LAT);
+const OFFICE_LNG = Number(process.env.OFFICE_LNG);
+const OFFICE_RADIUS = Number(process.env.OFFICE_RADIUS || 100);
     const today = todayDate();
 
     const emp = await getEmpFromUser(req.user.id);
@@ -125,6 +148,27 @@ export const checkOut = async (req, res) => {
   try {
     await conn.beginTransaction();
     const { latitude, longitude, accuracy, device_info } = req.body;
+    if (
+  latitude === undefined ||
+  longitude === undefined
+) {
+  return errorResponse(
+    res,
+    'Latitude and Longitude are required',
+    400
+  );
+}
+
+if (
+  accuracy !== undefined &&
+  Number(accuracy) > 100
+) {
+  return errorResponse(
+    res,
+    'GPS accuracy is too low. Please move to an open area.',
+    400
+  );
+}
     const today = todayDate();
 
     const emp = await getEmpFromUser(req.user.id);
